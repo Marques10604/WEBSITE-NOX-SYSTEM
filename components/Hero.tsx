@@ -121,27 +121,59 @@ const Hero: React.FC = () => {
     return "Operações";
   };
 
-  // --- SCORING ENGINE (Weighted Scoring) ---
+  // --- SCORING ENGINE (Weighted Scoring + Logical Locks) ---
   const calculateAutonomyScore = () => {
-    let maturityVal = 0;
-    let frequencyVal = 0;
-    let gargaloVal = 100;
-    let resultVal = 100;
+    const s2 = answers[2] || ""; // Subsetor
+    const s3 = answers[3] || ""; // Gargalo
+    const s4 = answers[4] || ""; // Frequência
+    const s5 = answers[5] || ""; // Nível de Operação
+    const s6 = answers[6] || ""; // Resultado Esperado
 
-    const maturity = answers[5];
-    if (maturity?.includes("Manual")) maturityVal = 20;
-    else if (maturity?.includes("Semi-automatizado")) maturityVal = 50;
-    else if (maturity?.includes("Automatizado")) maturityVal = 80;
-    else if (maturity?.includes("Autônomo")) maturityVal = 100;
+    // --- TRAVAS LÓGICAS (Locks) ---
+    const lockA = s5.includes("Manual");
+    const lockB = s4.includes("Todos os dias") && s3.includes("Falhas recorrentes");
+    const lockC = s2.includes("Triagem") && (s5.includes("Manual") || s4.includes("Todos os dias") || s3.includes("Falhas recorrentes"));
 
-    const frequency = answers[4];
-    if (frequency?.includes("Todos os dias")) frequencyVal = 100;
-    else if (frequency?.includes("Toda semana")) frequencyVal = 70;
-    else if (frequency?.includes("Esporádico")) frequencyVal = 40;
-    else if (frequency?.includes("picos")) frequencyVal = 30;
+    if (lockA || lockB || lockC) {
+      // Any structural lock caps the score at 40
+      return Math.min(38, Math.max(12, Math.floor(Math.random() * 20) + 10)); // Variable score within Sem Estrutura range
+    }
 
-    const finalScore = (maturityVal * 0.35) + (frequencyVal * 0.30) + (gargaloVal * 0.20) + (resultVal * 0.15);
-    return Math.round(finalScore);
+    // --- PESOS E VETORES (Weights) ---
+    let score = 40; // Base score for non-locked scenarios
+
+    // Nível de operação
+    if (s5.includes("Semi-automatizado")) score += 15;
+    else if (s5.includes("Automatizado (mas frágil)")) score += 25;
+    else if (s5.includes("Autônomo")) score += 35;
+
+    // Frequência
+    if (s4.includes("Todos os dias")) score -= 15;
+    else if (s4.includes("Toda semana")) score += 0;
+    else if (s4.includes("Esporádico")) score += 10;
+    else if (s4.includes("picos")) score += 15;
+
+    // Gargalo
+    if (s3.includes("Falhas recorrentes")) score -= 15;
+    else if (s3.includes("Dependência excessiva")) score -= 10;
+    else if (s3.includes("Lentidão")) score += 5;
+    else if (s3.includes("Perda de tempo")) score += 10;
+    else if (s3.includes("Sobrecarga")) score += 10;
+
+    // Subsetor (Mapping keywords from SECTOR_FUNCTIONS)
+    if (s2.includes("FAQ")) score += 10;
+    else if (s2.includes("Suporte técnico")) score += 15;
+    else if (s2.includes("Pós-venda")) score += 20;
+    else if (s2.includes("Triagem")) score += 0;
+
+    // Resultado Desejado
+    if (s6.includes("incêndio")) score -= 10;
+    else if (s6.includes("horas manuais")) score += 10;
+    else if (s6.includes("tempo de resposta")) score += 10;
+    else if (s6.includes("dono do operacional")) score += 5;
+    else if (s6.includes("erros repetidos")) score += 15;
+
+    return Math.min(100, Math.max(0, score));
   };
 
   const getDiagnosisContent = (score: number) => {
@@ -472,7 +504,7 @@ const Hero: React.FC = () => {
                 </div>
 
                 <div className="mt-3 p-2 border border-zinc-800/50 bg-black/40 text-[10px] text-zinc-400 font-mono italic">
-                    <span className="text-emerald-500 font-bold">INFO:</span> Em operações com processo minimamente estruturado, este tipo de agente costuma reduzir de 15% a 35% do tempo manual neste fluxo específico.
+                    <span className="text-emerald-500 font-bold">INFO:</span> Em operações com processo {score >= 71 ? "estruturado e validado" : "minimamente estruturado"}, este tipo de agente costuma reduzir de 15% a 35% do tempo manual neste fluxo específico.
                 </div>
             </div>
 
