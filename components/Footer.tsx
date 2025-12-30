@@ -11,25 +11,51 @@ const Footer: React.FC = () => {
     hasDiagnosis: false,
     privacy: false
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success'>('idle');
 
+  const validateField = (name: string, value: string) => {
+    let error = '';
+    if (name === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && !emailRegex.test(value)) {
+        error = 'E-mail inválido';
+      }
+    } else if (name === 'phone') {
+      // Basic validation for numbers and length (common for BR or international)
+      const phoneRegex = /^\+?(\d{2,3})?\s?\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/;
+      if (value && !phoneRegex.test(value)) {
+        error = 'Formato inválido';
+      }
+    }
+    setErrors(prev => ({ ...prev, [name]: error }));
+    return error;
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    validateField(e.target.name, e.target.value);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.privacy) return; // Simple validation
+    if (!formData.privacy) return;
+
+    // Final validation check
+    const emailErr = validateField('email', formData.email);
+    const phoneErr = validateField('phone', formData.phone);
+
+    if (emailErr || phoneErr) return;
     
-    // Start animation sequence
     setButtonState('loading');
 
-    // Simulate API processing time
     setTimeout(() => {
         setButtonState('success');
         
-        // Hold success state briefly before switching view
         setTimeout(() => {
             setIsSubmitted(true);
             setButtonState('idle');
-        }, 800);
+        }, 1200);
     }, 1500);
   };
 
@@ -49,14 +75,12 @@ const Footer: React.FC = () => {
                     <h3 className="text-3xl font-black text-zinc-900 uppercase tracking-tighter">SOLICITAR CONVERSA ESTRATÉGICA</h3>
                     <p className="text-zinc-500 mt-2 font-medium">Para operações já estruturadas que buscam automação agentiva.</p>
                     
-                    {/* New Authority Line */}
                     <div className="mt-6">
                         <p className="text-zinc-900 font-bold uppercase tracking-tight text-sm">
                           Essa conversa não é um pitch. <span className="text-zinc-500">É uma validação do seu cenário.</span>
                         </p>
                     </div>
 
-                    {/* Advisory Text */}
                     <div className="mt-6 inline-block bg-white border border-zinc-200 rounded-sm px-4 py-2 shadow-sm">
                         <p className="text-[11px] text-zinc-500 font-medium">
                             Se você ainda não realizou o Diagnóstico NOX, recomendamos iniciar por ele antes da conversa.
@@ -69,6 +93,7 @@ const Footer: React.FC = () => {
                     <div className="relative group">
                         <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Nome *</label>
                         <input 
+                            name="name"
                             required
                             disabled={buttonState !== 'idle'}
                             type="text" 
@@ -77,33 +102,46 @@ const Footer: React.FC = () => {
                             onChange={(e) => setFormData({...formData, name: e.target.value})}
                         />
                     </div>
-                    <div>
-                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Telefone *</label>
+                    <div className="relative group">
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-2 transition-colors ${errors.phone ? 'text-red-500' : 'text-zinc-400'}`}>Telefone *</label>
                         <input 
+                            name="phone"
                             required
                             disabled={buttonState !== 'idle'}
                             type="tel" 
-                            className="w-full border-b-2 border-zinc-200 py-2 focus:outline-none focus:border-zinc-900 transition-colors bg-transparent text-zinc-900 font-medium disabled:opacity-50" 
+                            className={`w-full border-b-2 py-2 focus:outline-none transition-colors bg-transparent text-zinc-900 font-medium disabled:opacity-50 ${errors.phone ? 'border-red-500' : 'border-zinc-200 focus:border-zinc-900'}`} 
                             value={formData.phone}
-                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                            onBlur={handleBlur}
+                            onChange={(e) => {
+                              setFormData({...formData, phone: e.target.value});
+                              if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+                            }}
                         />
+                        {errors.phone && <span className="absolute -bottom-5 left-0 text-[10px] font-bold text-red-500 uppercase tracking-tighter">{errors.phone}</span>}
                     </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Email *</label>
+                    <div className="relative group">
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-2 transition-colors ${errors.email ? 'text-red-500' : 'text-zinc-400'}`}>Email *</label>
                         <input 
+                            name="email"
                             required
                             disabled={buttonState !== 'idle'}
                             type="email" 
-                            className="w-full border-b-2 border-zinc-200 py-2 focus:outline-none focus:border-zinc-900 transition-colors bg-transparent text-zinc-900 font-medium disabled:opacity-50" 
+                            className={`w-full border-b-2 py-2 focus:outline-none transition-colors bg-transparent text-zinc-900 font-medium disabled:opacity-50 ${errors.email ? 'border-red-500' : 'border-zinc-200 focus:border-zinc-900'}`} 
                             value={formData.email}
-                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            onBlur={handleBlur}
+                            onChange={(e) => {
+                              setFormData({...formData, email: e.target.value});
+                              if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                            }}
                         />
+                        {errors.email && <span className="absolute -bottom-5 left-0 text-[10px] font-bold text-red-500 uppercase tracking-tighter">{errors.email}</span>}
                     </div>
-                    <div>
+                    <div className="relative group">
                         <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Empresa *</label>
                         <input 
+                            name="company"
                             required
                             disabled={buttonState !== 'idle'}
                             type="text" 
@@ -116,6 +154,7 @@ const Footer: React.FC = () => {
                     <div>
                     <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Mensagem</label>
                     <textarea 
+                        name="message"
                         rows={4} 
                         disabled={buttonState !== 'idle'}
                         placeholder="Se já realizou o Diagnóstico NOX, descreva brevemente o fluxo que deseja automatizar."
@@ -126,7 +165,6 @@ const Footer: React.FC = () => {
                     </div>
                     
                     <div className="space-y-3">
-                        {/* Context Checkbox */}
                         <div className="flex items-center gap-2">
                             <input 
                                 type="checkbox" 
@@ -139,7 +177,6 @@ const Footer: React.FC = () => {
                             <label htmlFor="diagnosis-done" className="text-sm font-medium text-zinc-700">Já realizei o Diagnóstico NOX</label>
                         </div>
 
-                        {/* Privacy Checkbox */}
                         <div className="flex items-center gap-2">
                             <input 
                                 required
@@ -159,10 +196,10 @@ const Footer: React.FC = () => {
                         disabled={buttonState !== 'idle'}
                         className={`
                             px-10 py-4 rounded-sm font-bold uppercase tracking-widest transition-all w-full md:w-auto shadow-lg 
-                            flex items-center justify-center gap-2
+                            flex items-center justify-center gap-2 relative overflow-hidden
                             ${buttonState === 'idle' ? 'bg-zinc-900 text-white hover:bg-zinc-700 hover:shadow-xl transform hover:-translate-y-0.5' : ''}
                             ${buttonState === 'loading' ? 'bg-zinc-800 text-zinc-400 cursor-wait' : ''}
-                            ${buttonState === 'success' ? 'bg-emerald-600 text-white scale-105 shadow-emerald-500/20' : ''}
+                            ${buttonState === 'success' ? 'bg-emerald-600 text-white scale-105 shadow-[0_0_25px_rgba(16,185,129,0.5)] animate-[pulse_1.5s_infinite]' : ''}
                         `}
                     >
                         {buttonState === 'idle' && "SOLICITAR AVALIAÇÃO ESTRATÉGICA"}
@@ -173,10 +210,13 @@ const Footer: React.FC = () => {
                             </>
                         )}
                         {buttonState === 'success' && (
-                            <>
-                                <CheckCircle2 className="w-5 h-5 animate-bounce" />
+                            <div className="flex items-center gap-2 animate-in zoom-in duration-300">
+                                <CheckCircle2 className="w-5 h-5" />
                                 SOLICITAÇÃO ENVIADA
-                            </>
+                            </div>
+                        )}
+                        {buttonState === 'success' && (
+                            <div className="absolute inset-0 bg-white/20 animate-[ping_1.5s_infinite] pointer-events-none opacity-20"></div>
                         )}
                     </button>
                 </form>
@@ -217,11 +257,9 @@ const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* Lower Section: Dark Block */}
       <div className="bg-black text-white border-t border-zinc-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           
-          {/* Final Philosophical Statement */}
           <div className="mb-24 text-center border-b border-zinc-900 pb-16">
             <h4 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tighter max-w-3xl mx-auto leading-tight italic">
               Automação não é o começo. <br/>
@@ -230,8 +268,6 @@ const Footer: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
-            
-            {/* Contact Info */}
             <div>
               <h3 className="text-2xl font-black mb-8 tracking-tighter uppercase">Contate-nos</h3>
               <ul className="space-y-6 text-zinc-400 text-sm">
@@ -268,7 +304,6 @@ const Footer: React.FC = () => {
               </div>
             </div>
 
-            {/* Newsletter Box */}
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-sm p-10 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full"></div>
               <h3 className="text-xl font-bold mb-1 text-white uppercase">Nunca perca uma novidade</h3>
